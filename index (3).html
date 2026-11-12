@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Árboles del campus · Universidad de La Sabana</title>
+<meta name="description" content="Carrusel de las especies de árboles del campus de la Universidad de La Sabana. Complemento de «Un día con Abejandra».">
+
+<!-- Tipografía institucional: Libre Franklin (Google Fonts) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+
+<style>
+/* =====================================================================
+   ESTILOS
+   ===================================================================== */
+
+/* ---------- 1. Variables de identidad visual ---------- */
+:root {
+  --azul: #002169;          /* azul institucional */
+  --azul-claro: #D5E5F1;    /* azul claro */
+  --azul-gris: #AEB8D3;     /* azul grisáceo */
+  --blanco: #FFFFFF;
+  --texto: #333333;         /* texto general */
+  --cafe: #4A3F35;          /* títulos */
+  --verde: #3A6B35;         /* verde follaje */
+  --miel: #F2B705;          /* amarillo miel (acento) */
+  --miel-suave: #FFF6D8;    /* fondo suave del dato curioso */
+  --fondo-video: #0E1B3D;
+
+  --sombra: 0 6px 18px rgba(0, 33, 105, .12);
+  --sombra-alta: 0 20px 42px rgba(0, 33, 105, .24);
+
+  /* Ancho de las tarjetas: crece con la pantalla pero respeta la altura disponible */
+  --card-w: max(160px, min(clamp(190px, 21vw, 250px), calc((100vh - 150px) / 1.42)));
+}
+@supports (height: 100dvh) {
+  :root { --card-w: max(160px, min(clamp(190px, 21vw, 250px), calc((100dvh - 150px) / 1.42))); }
+}
+
+/* ---------- 2. Base ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  border-radius: 0 !important;   /* Identidad: esquinas rectas en todo */
+}
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: "Libre Franklin", Arial, sans-serif;
+  font-weight: 400;
+  color: var(--texto);
+  background: transparent;   /* sin panel de fondo: se ve el fondo del Genially */
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; }
+html.con-modal, html.con-modal body { overflow: hidden; }
+
+
+/* Texto solo para lectores de pantalla */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+/* Foco visible: anillo azul + borde miel */
+:focus { outline: none; }
+:focus-visible {
+  outline: 3px solid var(--miel);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--azul);
+}
+
+/* ---------- 3. Estructura general ---------- */
+.app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: clamp(12px, 2vw, 22px) clamp(14px, 3vw, 36px) clamp(10px, 1.6vw, 18px);
+}
+@supports (height: 100dvh) { .app { min-height: 100dvh; } }
+
+
+/* ---------- 4. Carrusel ---------- */
+.carrusel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.escenario {
+  position: relative;
+  flex: 1;
+  min-height: calc(var(--card-w) * 1.42 + 44px);
+}
+/* Sombra de "suelo" bajo las tarjetas */
+.escenario::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(50% + var(--card-w) * .71 - 4px);
+  width: min(78%, 880px);
+  height: 34px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(0, 33, 105, .18), rgba(0, 33, 105, 0));
+  pointer-events: none;
+}
+.anillo {
+  position: absolute;
+  inset: 0;
+  perspective: 1100px;
+  perspective-origin: 50% 45%;
+  touch-action: pan-y;            /* deja hacer scroll vertical; el gesto horizontal gira */
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: grab;
+  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+.anillo.arrastrando { cursor: grabbing; }
+
+.diapositiva {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--card-w);
+  height: calc(var(--card-w) * 1.42);
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+}
+
+/* ---------- 5. Tarjeta de presentación ---------- */
+.tarjeta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #fff;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: var(--sombra);
+  transition: box-shadow .3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tarjeta:focus-visible { outline-offset: 4px; }
+.tarjeta img, .tarjeta svg { -webkit-user-drag: none; }
+
+/* Foto de la tarjeta (la primera foto de cada especie) */
+.tarjeta__foto {
+  position: relative;
+  display: block;
+  flex: none;
+  height: 55%;
+  background: var(--azul-claro);
+  overflow: hidden;
+}
+.tarjeta__foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.tarjeta__foto img[hidden] { display: none; }
+/* Recuadro pequeño cuando la especie aún no tiene fotos */
+.tarjeta__sin-foto {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--azul);
+  font-weight: 700;
+  font-size: max(12px, calc(var(--card-w) * .058));
+  background-color: var(--azul-claro);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23FFFFFF' stroke-width='1.6'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23FFFFFF' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-size: 56px 100px;
+}
+.tarjeta__sin-foto[hidden] { display: none; }
+
+.tarjeta .etiqueta {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .14);
+}
+.tarjeta__cuerpo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  padding: calc(var(--card-w) * .07) calc(var(--card-w) * .075) 8px;
+}
+.tarjeta__nombre {
+  font-weight: 700;
+  color: var(--cafe);
+  font-size: max(15px, calc(var(--card-w) * .092));
+  line-height: 1.12;
+}
+.tarjeta__cientifico {
+  font-style: italic;
+  font-size: max(12px, calc(var(--card-w) * .058));
+  line-height: 1.3;
+  color: var(--texto);
+}
+.tarjeta__ver {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px calc(var(--card-w) * .075);
+  background: var(--azul);
+  color: #fff;
+  font-weight: 600;
+  font-size: max(12.5px, calc(var(--card-w) * .058));
+  transition: background-color .2s ease, color .2s ease;
+}
+.tarjeta:hover .tarjeta__ver,
+.tarjeta:focus-visible .tarjeta__ver { background: var(--miel); color: var(--azul); }
+
+/* Tarjeta del frente: sombra más marcada y franja miel */
+.es-frente .tarjeta { box-shadow: var(--sombra-alta); }
+.es-frente .tarjeta::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 5px;
+  background: var(--miel);
+  z-index: 2;
+}
+
+/* Etiquetas Nativa / Introducida */
+.etiqueta {
+  display: inline-block;
+  padding: 5px 9px;
+  font-size: .74rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .02em;
+}
+.etiqueta--nativa { background: var(--verde); color: #fff; }
+.etiqueta--introducida { background: var(--azul-gris); color: var(--azul); }
+
+/* ---------- 6. Controles ---------- */
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  padding-top: 6px;
+}
+.boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 2px solid var(--azul);
+  background: var(--azul);
+  color: #fff;
+  font: 600 .95rem/1 "Libre Franklin", Arial, sans-serif;
+  cursor: pointer;
+  box-shadow: var(--sombra);
+  transition: background-color .2s ease, color .2s ease;
+}
+.boton:hover { background: #0B318A; border-color: #0B318A; }
+.boton--secundario { background: #fff; color: var(--azul); }
+.boton--secundario:hover { background: var(--azul-claro); border-color: var(--azul); }
+.boton svg { flex: none; }
+.boton[hidden] { display: none; }
+
+.indicador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 220px;
+}
+.puntos { display: flex; gap: 2px; }
+.punto {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.punto span {
+  width: 15px;
+  height: 17px;
+  background: var(--azul-gris);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  transition: transform .2s ease, background-color .2s ease;
+}
+.punto:hover span { background: var(--azul); }
+.punto[aria-current="true"] span { background: var(--miel); transform: scale(1.3); }
+.contador {
+  margin: 0;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--azul);
+  text-align: center;
+}
+
+/* ---------- 7. Ventana de detalle ---------- */
+.capa {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: clamp(8px, 3vw, 28px);
+  background: rgba(0, 20, 66, .58);
+  -webkit-backdrop-filter: blur(3px);
+          backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity .22s ease;
+}
+.capa[hidden] { display: none; }
+.capa.abierta { opacity: 1; }
+
+.dialogo {
+  display: flex;
+  flex-direction: column;
+  width: min(1080px, 100%);
+  height: min(640px, 100%);
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+  overflow: hidden;
+  transform: translateY(14px) scale(.985);
+  transition: transform .25s ease;
+}
+.capa.abierta .dialogo { transform: none; }
+
+.dialogo__barra {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px 8px 18px;
+  background: var(--azul);
+  color: #fff;
+}
+.dialogo__barra p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: .86rem;
+  font-weight: 600;
+}
+.boton-cerrar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 0;
+  background: #fff;
+  color: var(--azul);
+  font: 700 .92rem/1 "Libre Franklin", Arial, sans-serif;
+  cursor: pointer;
+  transition: background-color .2s ease;
+}
+.boton-cerrar:hover { background: var(--miel); }
+
+.dialogo__cuerpo {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+}
+.dialogo__video {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  background: var(--fondo-video);
+}
+.dialogo__video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--fondo-video);
+}
+.dialogo__video video[hidden] { display: none; }
+
+.dialogo__info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: clamp(16px, 2vw, 26px);
+}
+.ficha__titulo {
+  margin: 8px 0 2px;
+  color: var(--cafe);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 1.1rem + 1.3vw, 2.1rem);
+  line-height: 1.1;
+}
+.ficha__cientifico {
+  margin: 0;
+  font-style: italic;
+  font-size: 1.05rem;
+}
+
+/* Galería */
+.galeria__principal {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 16 / 10;
+  background: var(--azul-claro);
+  overflow: hidden;
+  box-shadow: var(--sombra);
+}
+.galeria__principal[hidden] { display: none; }
+.galeria__principal img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.galeria__principal img.visible { opacity: 1; }
+.miniaturas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.miniaturas[hidden], .miniaturas li[hidden] { display: none; }
+.miniatura {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 3px solid transparent;
+  background: var(--azul-claro);
+  cursor: pointer;
+  overflow: hidden;
+}
+.miniatura img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.miniatura:hover { border-color: var(--azul-gris); }
+.miniatura[aria-pressed="true"] { border-color: var(--miel); }
+
+/* Dato curioso */
+.dato {
+  padding: 14px 18px 16px;
+  background: var(--miel-suave);
+  border-left: 6px solid var(--miel);
+  box-shadow: var(--sombra);
+}
+.dato h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: var(--cafe);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.dato p { margin: 0; font-size: 1rem; line-height: 1.55; }
+
+/* Recuadro "en camino" (video o fotos que aún no existen) */
+.pendiente {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+  color: var(--azul);
+  background-color: var(--azul-claro);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23FFFFFF' stroke-width='1.6'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23FFFFFF' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-size: 56px 100px;
+}
+.pendiente[hidden] { display: none; }
+.pendiente strong { font-size: 1.3rem; font-weight: 700; }
+.pendiente span { max-width: 32ch; font-size: .95rem; color: var(--texto); line-height: 1.45; }
+.galeria .pendiente { height: auto; aspect-ratio: 16 / 10; box-shadow: var(--sombra); }
+
+/* ---------- 8. Responsive ---------- */
+@media (max-width: 760px) {
+  .capa { padding: 0; place-items: stretch; }
+  .dialogo { width: 100%; height: 100%; }
+  .dialogo__cuerpo { display: block; overflow-y: auto; }
+  .dialogo__video { height: min(52vh, 420px); }
+  .dialogo__info { overflow: visible; }
+}
+@media (max-width: 640px) {
+  :root { --card-w: max(160px, min(64vw, 250px, calc((100vh - 190px) / 1.42))); }
+  .indicador { order: -1; flex-basis: 100%; min-width: 0; }
+  .boton { padding: 10px 12px; font-size: .9rem; }
+}
+@supports (height: 100dvh) {
+  @media (max-width: 640px) {
+    :root { --card-w: max(160px, min(64vw, 250px, calc((100dvh - 190px) / 1.42))); }
+  }
+  @media (max-width: 760px) {
+    .dialogo__video { height: min(52dvh, 420px); }
+  }
+}
+
+/* ---------- 9. Movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+.modo-plano .anillo { perspective: none; }
+</style>
+</head>
+
+<body>
+<main class="app" id="app">
+
+  <!-- Carrusel -->
+  <section class="carrusel" id="carrusel" aria-roledescription="carrusel" aria-label="Carrusel de especies" aria-describedby="ayudaCarrusel">
+    <p class="sr-only" id="ayudaCarrusel">Usa las flechas izquierda y derecha para girar, y Enter o Espacio para abrir la especie del frente.</p>
+
+    <div class="escenario" id="escenario">
+      <!-- Las tarjetas se crean con JavaScript a partir del objeto "especies" -->
+      <div class="anillo" id="anillo"></div>
+    </div>
+
+    <div class="controles">
+      <button class="boton boton--secundario" id="btnAnterior" type="button" aria-controls="anillo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Anterior
+      </button>
+
+      <div class="indicador">
+        <div class="puntos" id="puntos" role="group" aria-label="Ir a una especie"></div>
+        <p class="contador" id="contador">Especie 1 de 6</p>
+      </div>
+
+      <button class="boton" id="btnSiguiente" type="button" aria-controls="anillo">
+        Siguiente
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+    </div>
+
+    <!-- Anuncios para lectores de pantalla -->
+    <p class="sr-only" id="anuncio" aria-live="polite" aria-atomic="true"></p>
+  </section>
+
+  <noscript><p>Para ver el carrusel de especies es necesario activar JavaScript.</p></noscript>
+</main>
+
+<!-- ===================== VENTANA DE DETALLE ===================== -->
+<div class="capa" id="capa" hidden>
+  <div class="dialogo" id="dialogo" role="dialog" aria-modal="true" aria-labelledby="dlgTitulo" aria-describedby="dlgDato">
+
+    <div class="dialogo__barra">
+      <p>
+        <svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><polygon points="7,0 14,4 14,12 7,16 0,12 0,4" fill="#F2B705"/></svg>
+        Ficha de especie
+      </p>
+      <button class="boton-cerrar" id="btnCerrar" type="button">
+        Cerrar
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </div>
+
+    <div class="dialogo__cuerpo">
+      <!-- IZQUIERDA (arriba en celular): video -->
+      <div class="dialogo__video" id="zonaVideo">
+        <!-- Los elementos <video> se crean con JavaScript (preload="none") -->
+        <div class="pendiente" id="videoPendiente" hidden>
+          <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><polygon points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5" fill="#F2B705"/><path d="M26 21L45 32L26 43Z" fill="#002169"/></svg>
+          <strong>Video en camino</strong>
+          <span>Muy pronto podrás ver esta especie en movimiento.</span>
+        </div>
+      </div>
+
+      <!-- DERECHA (abajo en celular): ficha, galería y dato curioso -->
+      <div class="dialogo__info">
+        <div>
+          <span class="etiqueta" id="dlgEtiqueta">Nativa</span>
+          <h2 class="ficha__titulo" id="dlgTitulo">Especie</h2>
+          <p class="ficha__cientifico" id="dlgCientifico"></p>
+        </div>
+
+        <div class="galeria">
+          <figure class="galeria__principal" id="galeriaFigura">
+            <img id="fotoPrincipal" alt="">
+          </figure>
+          <ul class="miniaturas" id="miniaturas" aria-label="Fotos de la especie"></ul>
+          <div class="pendiente" id="fotosPendiente" hidden>
+            <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><polygon points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5" fill="#F2B705"/><rect x="19" y="23" width="26" height="19" fill="none" stroke="#002169" stroke-width="3"/><circle cx="32" cy="32.5" r="5" fill="#002169"/></svg>
+            <strong>Fotos en camino</strong>
+            <span>Estamos preparando las fotografías de esta especie en el campus.</span>
+          </div>
+        </div>
+
+        <aside class="dato" aria-labelledby="datoTitulo">
+          <h3 id="datoTitulo">
+            <svg width="16" height="18" viewBox="0 0 14 16" aria-hidden="true"><polygon points="7,0 14,4 14,12 7,16 0,12 0,4" fill="#F2B705"/></svg>
+            Dato curioso
+          </h3>
+          <p id="dlgDato"></p>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   1. DATOS DE LAS ESPECIES  (la parte que normalmente se edita)
+   ---------------------------------------------------------------------
+   Cómo editar sin saber programar:
+   • Cambia solo los textos que están entre comillas " ".
+   • id: nombre corto, en minúsculas, sin tildes ni espacios. Debe
+     coincidir con los nombres de los archivos:
+       videos/ID.mp4   y   fotos/ID_1.jpg, fotos/ID_2.jpg, fotos/ID_3.jpg
+   • origen: escribe exactamente "Nativa" o "Introducida".
+   • Para agregar una especie: copia un bloque completo { ... },
+     pégalo antes del corchete ] final y sepáralo del anterior con una coma.
+   • La tarjeta del carrusel muestra la PRIMERA foto de la lista "fotos".
+     Si quieres otra foto en la tarjeta, ponla de primera.
+   • Si todavía no hay video o fotos, deja igual las rutas: la página
+     mostrará "Video en camino" o "Fotos en camino" hasta que subas
+     los archivos al repositorio con esos nombres.
+   ===================================================================== */
+const especies = [
+  {
+    id: "palma",
+    nombreComun: "Palma Fúnebre",
+    nombreCientifico: "Cycas revoluta",            // POR VALIDAR
+    origen: "Introducida",
+    video: "videos/palma.mp4",
+    fotos: ["fotos/palma_1.jpg", "fotos/palma_2.jpg", "fotos/palma_3.jpg"],
+    // POR VALIDAR
+    datoCurioso: "Hay plantas macho y plantas hembra. Los machos forman un cono alargado y las hembras una especie de cojín dorado donde aparecen semillas de color naranja."
+  },
+  {
+    id: "liquidambar",
+    nombreComun: "Liquidámbar",
+    nombreCientifico: "Liquidambar styraciflua",   // POR VALIDAR
+    origen: "Introducida",
+    video: "videos/liquidambar.mp4",
+    fotos: ["fotos/liquidambar_1.jpg", "fotos/liquidambar_2.jpg", "fotos/liquidambar_3.jpg"],
+    // POR VALIDAR
+    datoCurioso: "Los aztecas mezclaban su resina aromática con tabaco para perfumar el humo."
+  },
+  {
+    id: "pino",
+    nombreComun: "Pino Ciprés",
+    nombreCientifico: "Cupressus lusitanica",      // POR VALIDAR
+    origen: "Introducida",
+    video: "videos/pino.mp4",
+    fotos: ["fotos/pino_1.jpg", "fotos/pino_2.jpg", "fotos/pino_3.jpg"],
+    // POR VALIDAR
+    datoCurioso: "Su nombre “lusitanica” significa “de Portugal”, porque los botánicos la describieron a partir de árboles sembrados allá, aunque en realidad es nativa de México y Centroamérica."
+  },
+  {
+    id: "hayuelo",
+    nombreComun: "Hayuelo",
+    nombreCientifico: "Dodonaea viscosa",          // POR VALIDAR
+    origen: "Nativa",
+    video: "videos/hayuelo.mp4",
+    fotos: ["fotos/hayuelo_1.jpg", "fotos/hayuelo_2.jpg", "fotos/hayuelo_3.jpg"],
+    // POR VALIDAR
+    datoCurioso: "Es una de las plantas más viajeras del mundo: crece de forma natural en América, África, Asia y Oceanía."
+  },
+  {
+    id: "papayuelo",
+    nombreComun: "Papayuelo",
+    nombreCientifico: "Vasconcellea pubescens",    // POR VALIDAR
+    origen: "Nativa",
+    video: "videos/papayuelo.mp4",
+    fotos: ["fotos/papayuelo_1.jpg", "fotos/papayuelo_2.jpg", "fotos/papayuelo_3.jpg"],
+    // POR VALIDAR
+    datoCurioso: "En Chile lo llaman “papaya chilena” y sus frutos en conserva son típicos de la ciudad de La Serena."
+  },
+  {
+    id: "ocobo",
+    nombreComun: "Bignonia rosa / Ocobo",
+    nombreCientifico: "Tabebuia rosea",            // POR VALIDAR
+    origen: "Nativa",
+    // El video y las fotos del Ocobo todavía no existen: mientras tanto
+    // se verá "Video en camino" y "Fotos en camino". Solo súbelos con estos nombres.
+    video: "videos/ocobo.mp4",
+    fotos: ["fotos/ocobo_1.jpg", "fotos/ocobo_2.jpg", "fotos/ocobo_3.jpg"],
+    // POR VALIDAR
+    datoCurioso: "En El Salvador se llama maquilishuat y es el árbol nacional del país."
+  }
+];
+
+
+/* =====================================================================
+   2. FUNCIONAMIENTO DEL CARRUSEL Y DE LA VENTANA DE DETALLE
+   ===================================================================== */
+(function () {
+  "use strict";
+
+  /* ---------- Ajustes ---------- */
+  const VELOCIDAD = 6;            // grados por segundo del giro automático (lento)
+  const PAUSA_TRAS_TOQUE = 4000;  // ms que el carrusel espera quieto después de tocarlo
+
+  const total = especies.length;
+  const PASO = 360 / total;       // ángulo entre tarjetas
+
+  /* ---------- Elementos ---------- */
+  const $ = (sel) => document.querySelector(sel);
+  const app = $("#app"), carrusel = $("#carrusel"), escenario = $("#escenario"), anillo = $("#anillo");
+  const puntosCont = $("#puntos"), contador = $("#contador"), anuncio = $("#anuncio");
+  const btnAnterior = $("#btnAnterior"), btnSiguiente = $("#btnSiguiente");
+  const capa = $("#capa"), dialogo = $("#dialogo"), btnCerrar = $("#btnCerrar");
+  const dlgEtiqueta = $("#dlgEtiqueta"), dlgTitulo = $("#dlgTitulo"), dlgCientifico = $("#dlgCientifico"), dlgDato = $("#dlgDato");
+  const zonaVideo = $("#zonaVideo"), videoPendiente = $("#videoPendiente");
+  const galeriaFigura = $("#galeriaFigura"), fotoPrincipal = $("#fotoPrincipal"), miniaturas = $("#miniaturas"), fotosPendiente = $("#fotosPendiente");
+
+  /* ---------- Utilidades ---------- */
+  const mod = (a, b) => ((a % b) + b) % b;
+  const esNativa = (e) => String(e.origen || "").trim().toLowerCase().startsWith("nativ");
+  const etiquetaTexto = (e) => (esNativa(e) ? "Nativa" : "Introducida");
+  const etiquetaClase = (e) => "etiqueta " + (esNativa(e) ? "etiqueta--nativa" : "etiqueta--introducida");
+  const crear = (tag, clase, texto) => {
+    const el = document.createElement(tag);
+    if (clase) el.className = clase;
+    if (texto != null) el.textContent = texto;
+    return el;
+  };
+
+  /* ---------- Estado ---------- */
+  let angulo = 0;            // giro actual del anillo (grados)
+  let objetivo = null;       // giro al que se está animando (botones, teclado, arrastre)
+  let frenteActual = -1;     // índice de la tarjeta al frente
+  let radioX = 380, radioZ = 300, anchoTarjeta = 250, mostrarVecinos = true;
+  let sucio = true;          // hay que volver a dibujar
+  let modalAbierto = false;
+  let anularClicHasta = 0;   // evita abrir una tarjeta justo después de arrastrar
+  const pausa = { hover: false, foco: false, toque: false, arrastre: false, modal: false };
+  let tmToque = null;
+
+  const fotosFallidas = new Set();   // fotos que no se pudieron cargar
+
+  const mqReducido = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let plano = mqReducido.matches;   // carrusel plano sin giro automático
+
+  const estaPausado = () => plano || Object.values(pausa).some(Boolean);
+
+  /* ---------- Foto de la tarjeta ----------
+     Usa la primera foto de la especie. Si no carga, prueba la siguiente;
+     si ninguna existe, muestra el recuadro "Fotos en camino". */
+  function crearFotoTarjeta(esp) {
+    const caja = crear("span", "tarjeta__foto");
+    caja.setAttribute("aria-hidden", "true");   // el nombre de la especie ya está en la tarjeta
+    const img = document.createElement("img");
+    img.alt = "";
+    img.decoding = "async";
+    img.draggable = false;
+    const aviso = crear("span", "tarjeta__sin-foto");
+    aviso.innerHTML = '<svg width="34" height="38" viewBox="0 0 14 16" aria-hidden="true"><polygon points="7,0 14,4 14,12 7,16 0,12 0,4" fill="#F2B705"/></svg><span>Fotos en camino</span>';
+    aviso.hidden = true;
+
+    const rutas = (esp.fotos || []).filter(Boolean);
+    let k = 0;
+    const probar = () => {
+      while (k < rutas.length && fotosFallidas.has(rutas[k])) k++;
+      if (k >= rutas.length) { img.hidden = true; aviso.hidden = false; return; }
+      img.src = rutas[k];
+    };
+    img.addEventListener("error", () => { fotosFallidas.add(rutas[k]); k++; probar(); });
+    probar();
+    caja.append(img, aviso);
+    return caja;
+  }
+
+  /* ---------- Construcción de tarjetas y puntos ---------- */
+  const diapositivas = [], tarjetas = [], puntos = [];
+
+  especies.forEach((esp, i) => {
+    const diap = crear("div", "diapositiva");
+    diap.setAttribute("role", "group");
+    diap.setAttribute("aria-roledescription", "diapositiva");
+    diap.setAttribute("aria-label", "Especie " + (i + 1) + " de " + total);
+
+    const btn = crear("button", "tarjeta");
+    btn.type = "button";
+    btn.tabIndex = -1;
+    btn.setAttribute("aria-haspopup", "dialog");
+
+    const ilus = crearFotoTarjeta(esp);
+
+    const etq = crear("span", etiquetaClase(esp), etiquetaTexto(esp));
+
+    const cuerpo = crear("span", "tarjeta__cuerpo");
+    cuerpo.append(crear("span", "tarjeta__nombre", esp.nombreComun), crear("em", "tarjeta__cientifico", esp.nombreCientifico));
+
+    const ver = crear("span", "tarjeta__ver");
+    ver.innerHTML = '<span>Ver especie</span><svg width="16" height="18" viewBox="0 0 14 16" aria-hidden="true"><polygon points="7,0 14,4 14,12 7,16 0,12 0,4" fill="currentColor"/></svg>';
+
+    btn.append(ilus, etq, cuerpo, ver);
+    btn.addEventListener("click", () => {
+      if (performance.now() < anularClicHasta) return;   // fue un arrastre, no un clic
+      irA(i);
+      abrir(i);
+    });
+    btn.addEventListener("dragstart", (e) => e.preventDefault());
+
+    diap.append(btn);
+    anillo.append(diap);
+    diapositivas.push(diap);
+    tarjetas.push(btn);
+
+    const p = crear("button", "punto");
+    p.type = "button";
+    p.setAttribute("aria-label", "Ir a la especie " + (i + 1) + ": " + esp.nombreComun);
+    p.innerHTML = '<span aria-hidden="true"></span>';
+    p.addEventListener("click", () => irA(i, { anunciar: true }));
+    puntosCont.append(p);
+    puntos.push(p);
+  });
+
+  /* ---------- Medidas (se recalculan al cambiar el tamaño) ---------- */
+  function medir() {
+    anchoTarjeta = diapositivas[0] ? diapositivas[0].offsetWidth : 250;
+    const w = anillo.clientWidth || 800;
+    if (w < 640) {
+      radioX = Math.min(w * .36, anchoTarjeta * .9);
+      radioZ = Math.max(radioX * 1.3, 160);
+      anillo.style.perspective = plano ? "none" : "900px";
+    } else {
+      radioX = Math.min(w * .34, anchoTarjeta * 1.75);
+      radioZ = radioX * .8;
+      anillo.style.perspective = plano ? "none" : "1100px";
+    }
+    mostrarVecinos = w >= anchoTarjeta * 2.6;
+    sucio = true;
+  }
+
+  /* ---------- Dibujo de cada cuadro ---------- */
+  function pintar() {
+    for (let i = 0; i < total; i++) {
+      const el = diapositivas[i];
+      let a = i * PASO - angulo;
+      a = mod(a + 180, 360) - 180;           // ángulo relativo al frente (-180 a 180)
+
+      if (!plano) {
+        // Modo 3D: la tarjeta recorre un anillo; las laterales se inclinan
+        const r = a * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+        const x = s * radioX, z = (c - 1) * radioZ, ry = s * 42, t = (c + 1) / 2;
+        el.style.transform = "translate(-50%,-50%) translate3d(" + x.toFixed(1) + "px,0," + z.toFixed(1) + "px) rotateY(" + ry.toFixed(2) + "deg)";
+        el.style.opacity = (0.3 + 0.7 * t).toFixed(3);
+        el.style.zIndex = String(Math.round(t * 100));
+        el.style.visibility = "visible";
+        el.style.pointerEvents = c < -0.35 ? "none" : "auto";
+      } else {
+        // Modo plano (movimiento reducido): tarjetas en fila, sin giro
+        const off = a / PASO, d = Math.abs(off);
+        const limite = mostrarVecinos ? 1.5 : 0.999;
+        const visible = d < limite;
+        el.style.transform = "translate(-50%,-50%) translateX(" + (off * anchoTarjeta * 1.12).toFixed(1) + "px) scale(" + (1 - Math.min(d, 1) * .12).toFixed(3) + ")";
+        el.style.opacity = visible ? (1 - Math.min(d, 1) * .45).toFixed(3) : "0";
+        el.style.zIndex = String(100 - Math.round(d * 10));
+        el.style.visibility = visible ? "visible" : "hidden";
+        el.style.pointerEvents = visible ? "auto" : "none";
+      }
+    }
+    actualizarFrente();
+  }
+
+  /* ---------- Tarjeta del frente ---------- */
+  const indiceDe = (ang) => mod(Math.round(ang / PASO), total);
+  const frenteLogico = () => indiceDe(objetivo !== null ? objetivo : angulo);
+
+  function actualizarFrente() {
+    const f = frenteLogico();
+    if (f === frenteActual) return;
+    const anterior = frenteActual;
+    frenteActual = f;
+
+    diapositivas.forEach((d, i) => d.classList.toggle("es-frente", i === f));
+    tarjetas.forEach((t, i) => { t.tabIndex = i === f ? 0 : -1; });
+    puntos.forEach((p, i) => p.setAttribute("aria-current", i === f ? "true" : "false"));
+    contador.textContent = "Especie " + (f + 1) + " de " + total + ": " + especies[f].nombreComun;
+
+    // Si el foco estaba en una tarjeta, lo pasamos a la nueva tarjeta del frente
+    if (anterior >= 0 && tarjetas.includes(document.activeElement) && document.activeElement !== tarjetas[f]) {
+      tarjetas[f].focus({ preventScroll: true });
+    }
+  }
+
+  function anunciar(i) {
+    anuncio.textContent = "Especie " + (i + 1) + " de " + total + ": " + especies[i].nombreComun;
+  }
+
+  /* ---------- Movimiento manual ---------- */
+  function irA(i, opciones) {
+    const op = opciones || {};
+    const base = Math.round((objetivo !== null ? objetivo : angulo) / PASO);
+    let dif = mod(i - mod(base, total), total);
+    if (dif > total / 2) dif -= total;          // camino más corto
+    objetivo = (base + dif) * PASO;
+    sucio = true;
+    actualizarFrente();
+    if (op.anunciar) anunciar(i);
+    if (op.enfocar) tarjetas[i].focus({ preventScroll: true });
+  }
+  function mover(delta, enfocar) {
+    irA(mod(frenteLogico() + delta, total), { anunciar: true, enfocar: enfocar });
+  }
+
+  btnAnterior.addEventListener("click", () => mover(-1));
+  btnSiguiente.addEventListener("click", () => mover(1));
+
+  /* ---------- Teclado ---------- */
+  carrusel.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const enTarjeta = tarjetas.includes(document.activeElement);
+      mover(e.key === "ArrowRight" ? 1 : -1, enTarjeta);
+    }
+    // Enter y Espacio sobre la tarjeta del frente la abren (comportamiento nativo del botón)
+  });
+
+  /* ---------- Pausas: mouse, foco del teclado y toque ---------- */
+  escenario.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") pausa.hover = true; });
+  escenario.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") pausa.hover = false; });
+
+  carrusel.addEventListener("focusin", (e) => {
+    let teclado = true;
+    try { teclado = e.target.matches(":focus-visible"); } catch (err) { /* navegador antiguo */ }
+    pausa.foco = tarjetas.includes(e.target) && teclado;
+  });
+  carrusel.addEventListener("focusout", () => {
+    setTimeout(() => { if (!tarjetas.includes(document.activeElement)) pausa.foco = false; }, 0);
+  });
+
+  /* ---------- Arrastre con mouse o dedo ---------- */
+  let arr = null;
+  anillo.addEventListener("pointerdown", (e) => {
+    if (modalAbierto) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    arr = { id: e.pointerId, x: e.clientX, y: e.clientY, ang: angulo, activo: false };
+    if (e.pointerType !== "mouse") { pausa.toque = true; clearTimeout(tmToque); }
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!arr || e.pointerId !== arr.id) return;
+    const dx = e.clientX - arr.x, dy = e.clientY - arr.y;
+    if (!arr.activo) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+        arr.activo = true;
+        arr.x = e.clientX;
+        objetivo = null;
+        arr.ang = angulo;
+        pausa.arrastre = true;
+        anillo.classList.add("arrastrando");
+      }
+      return;
+    }
+    const gradosPorPx = plano ? PASO / (anchoTarjeta * 1.12) : (180 / Math.PI) / radioX;
+    angulo = arr.ang - (e.clientX - arr.x) * gradosPorPx;
+    sucio = true;
+  });
+  function soltar(e) {
+    if (!arr || e.pointerId !== arr.id) return;
+    if (arr.activo) {
+      const dx = e.clientX - arr.x;
+      let idx = Math.round(angulo / PASO);
+      const inicio = Math.round(arr.ang / PASO);
+      if (idx === inicio && Math.abs(dx) > 30) idx += dx < 0 ? 1 : -1;   // un deslizamiento corto también avanza
+      objetivo = idx * PASO;
+      anularClicHasta = performance.now() + 300;
+      pausa.arrastre = false;
+      anillo.classList.remove("arrastrando");
+      anunciar(mod(idx, total));
+      sucio = true;
+    }
+    if (e.pointerType !== "mouse") {
+      clearTimeout(tmToque);
+      tmToque = setTimeout(() => { pausa.toque = false; }, PAUSA_TRAS_TOQUE);
+    }
+    arr = null;
+  }
+  window.addEventListener("pointerup", soltar);
+  window.addEventListener("pointercancel", soltar);
+
+  /* ---------- Bucle de animación ---------- */
+  let tPrevio = performance.now();
+  function bucle(t) {
+    const dt = Math.min((t - tPrevio) / 1000, .05);
+    tPrevio = t;
+    if (objetivo !== null) {
+      if (plano) { angulo = objetivo; objetivo = null; }
+      else {
+        const d = objetivo - angulo;
+        if (Math.abs(d) < .05) { angulo = objetivo; objetivo = null; }
+        else angulo += d * (1 - Math.exp(-dt * 7));
+      }
+      sucio = true;
+    } else if (!estaPausado() && !arr) {
+      angulo += VELOCIDAD * dt;
+      sucio = true;
+    }
+    if (sucio) { pintar(); sucio = false; }
+    requestAnimationFrame(bucle);
+  }
+
+  /* ---------- Movimiento reducido ---------- */
+  function aplicarMovimiento() {
+    plano = mqReducido.matches;
+    document.body.classList.toggle("modo-plano", plano);
+    angulo = Math.round((objetivo !== null ? objetivo : angulo) / PASO) * PASO;
+    objetivo = null;
+    medir();
+  }
+  if (mqReducido.addEventListener) mqReducido.addEventListener("change", aplicarMovimiento);
+  else if (mqReducido.addListener) mqReducido.addListener(aplicarMovimiento);
+
+
+  /* =================================================================
+     VENTANA DE DETALLE
+     ================================================================= */
+  const videos = {};                 // un <video> por especie, todos con preload="none"
+  const videosFallidos = new Set();
+  let actual = -1, ultimoFoco = null, tmCierre = null;
+  let galeria = { rutas: [], botones: [], actual: 0, especie: null };
+
+  // Crear los videos (no se descarga nada hasta que se reproduce uno)
+  especies.forEach((esp) => {
+    const v = document.createElement("video");
+    v.setAttribute("preload", "none");
+    v.preload = "none";
+    v.controls = true;
+    v.setAttribute("playsinline", "");
+    v.playsInline = true;
+    v.hidden = true;
+    v.setAttribute("aria-label", "Video de " + esp.nombreComun);
+    v.addEventListener("error", () => falloVideo(esp.id));
+    if (esp.video) v.src = esp.video;
+    zonaVideo.insertBefore(v, videoPendiente);
+    videos[esp.id] = v;
+  });
+
+  function falloVideo(id) {
+    videosFallidos.add(id);
+    if (!modalAbierto || !especies[actual] || especies[actual].id !== id) return;
+    const v = videos[id];
+    const teniaFoco = document.activeElement === v;
+    v.hidden = true;
+    videoPendiente.hidden = false;
+    if (teniaFoco) btnCerrar.focus();
+  }
+
+  function reproducirVideo(esp, i) {
+    Object.values(videos).forEach((v) => { v.hidden = true; });
+    videoPendiente.hidden = true;
+    const v = videos[esp.id];
+    if (!esp.video || !v || videosFallidos.has(esp.id)) { videoPendiente.hidden = false; return; }
+    v.hidden = false;
+    const primera = (esp.fotos || []).find((r) => r && !fotosFallidas.has(r));
+    if (!v.getAttribute("poster") && primera) v.poster = primera;
+    v.muted = false;                                  // con sonido: la persona hizo clic
+    const promesa = v.play();
+    if (promesa && promesa.catch) {
+      promesa.catch((err) => {
+        if (!modalAbierto || actual !== i) return;
+        if (err && err.name === "NotAllowedError") { v.muted = true; v.play().catch(() => {}); }
+        else if (err && err.name === "NotSupportedError") falloVideo(esp.id);
+      });
+    }
+  }
+
+  /* ---------- Galería de fotos ---------- */
+  function montarGaleria(esp) {
+    miniaturas.innerHTML = "";
+    fotoPrincipal.classList.remove("visible");
+    fotoPrincipal.removeAttribute("src");
+    fotoPrincipal.dataset.ruta = "";
+    const todas = (esp.fotos || []).filter(Boolean);
+    galeria = { rutas: todas, botones: [], actual: 0, especie: esp };
+
+    const disponibles = todas.filter((r) => !fotosFallidas.has(r));
+    if (!disponibles.length) { mostrarFotosPendiente(); return; }
+
+    fotosPendiente.hidden = true;
+    galeriaFigura.hidden = false;
+
+    todas.forEach((ruta, k) => {
+      const li = document.createElement("li");
+      const b = crear("button", "miniatura");
+      b.type = "button";
+      b.setAttribute("aria-label", "Ver foto " + (k + 1) + " de " + todas.length);
+      b.setAttribute("aria-pressed", "false");
+      const img = document.createElement("img");
+      img.alt = "";
+      img.decoding = "async";
+      img.addEventListener("error", () => marcarFotoFallida(ruta));
+      img.src = ruta;
+      b.append(img);
+      b.addEventListener("click", () => mostrarFoto(k));
+      li.append(b);
+      li.hidden = fotosFallidas.has(ruta);
+      miniaturas.append(li);
+      galeria.botones.push(b);
+    });
+    actualizarMiniaturas();
+    mostrarFoto(todas.indexOf(disponibles[0]));
+  }
+
+  function textoAlt(esp, k, n) {
+    return "Foto " + (k + 1) + " de " + n + ": " + esp.nombreComun + " (" + esp.nombreCientifico + ") en el campus de la Universidad de La Sabana";
+  }
+
+  function mostrarFoto(k) {
+    const ruta = galeria.rutas[k];
+    if (!ruta || fotosFallidas.has(ruta)) return;
+    galeria.actual = k;
+    galeria.botones.forEach((b, j) => b.setAttribute("aria-pressed", j === k ? "true" : "false"));
+    fotoPrincipal.alt = textoAlt(galeria.especie, k, galeria.rutas.length);
+    if (fotoPrincipal.dataset.ruta !== ruta) {
+      fotoPrincipal.classList.remove("visible");
+      fotoPrincipal.dataset.ruta = ruta;
+      fotoPrincipal.src = ruta;
+    }
+    if (fotoPrincipal.complete && fotoPrincipal.naturalWidth > 0) fotoPrincipal.classList.add("visible");
+  }
+
+  fotoPrincipal.addEventListener("load", () => fotoPrincipal.classList.add("visible"));
+  fotoPrincipal.addEventListener("error", () => {
+    const ruta = fotoPrincipal.dataset.ruta;
+    if (ruta && galeria.rutas.includes(ruta)) marcarFotoFallida(ruta);
+  });
+
+  function marcarFotoFallida(ruta) {
+    const k = galeria.rutas.indexOf(ruta);
+    if (k === -1) return;                       // pertenece a otra especie
+    fotosFallidas.add(ruta);
+    const b = galeria.botones[k];
+    if (b) {
+      if (document.activeElement === b) btnCerrar.focus();
+      b.parentElement.hidden = true;
+    }
+    const restantes = galeria.rutas.filter((r) => !fotosFallidas.has(r));
+    if (!restantes.length) { mostrarFotosPendiente(); return; }
+    if (galeria.rutas[galeria.actual] === ruta) mostrarFoto(galeria.rutas.indexOf(restantes[0]));
+    actualizarMiniaturas();
+  }
+
+  function actualizarMiniaturas() {
+    const restantes = galeria.rutas.filter((r) => !fotosFallidas.has(r)).length;
+    miniaturas.hidden = restantes < 2;
+  }
+
+  function mostrarFotosPendiente() {
+    galeriaFigura.hidden = true;
+    miniaturas.hidden = true;
+    fotosPendiente.hidden = false;
+  }
+
+  /* ---------- Abrir y cerrar ---------- */
+  function abrir(i) {
+    const esp = especies[i];
+    actual = i;
+    ultimoFoco = tarjetas[i];
+    clearTimeout(tmCierre);
+
+    dlgEtiqueta.className = etiquetaClase(esp);
+    dlgEtiqueta.textContent = etiquetaTexto(esp);
+    dlgTitulo.textContent = esp.nombreComun;
+    dlgCientifico.textContent = esp.nombreCientifico;
+    dlgDato.textContent = esp.datoCurioso;
+    montarGaleria(esp);
+
+    capa.hidden = false;
+    document.documentElement.classList.add("con-modal");
+    app.inert = true;
+    app.setAttribute("inert", "");
+    modalAbierto = true;
+    pausa.modal = true;
+    requestAnimationFrame(() => capa.classList.add("abierta"));
+    dialogo.querySelector(".dialogo__info").scrollTop = 0;
+    dialogo.querySelector(".dialogo__cuerpo").scrollTop = 0;
+    btnCerrar.focus({ preventScroll: true });
+
+    reproducirVideo(esp, i);
+  }
+
+  function cerrar() {
+    if (!modalAbierto) return;
+    modalAbierto = false;
+    const esp = especies[actual];
+    const v = esp && videos[esp.id];
+    if (v) {
+      try { v.pause(); v.currentTime = 0; } catch (err) { /* video sin cargar */ }
+    }
+    capa.classList.remove("abierta");
+    const ocultar = () => { if (!modalAbierto) capa.hidden = true; };
+    if (plano) ocultar(); else tmCierre = setTimeout(ocultar, 230);
+
+    app.inert = false;
+    app.removeAttribute("inert");
+    document.documentElement.classList.remove("con-modal");
+    pausa.modal = false;
+    if (ultimoFoco) ultimoFoco.focus({ preventScroll: true });
+  }
+
+  btnCerrar.addEventListener("click", cerrar);
+
+  // Clic fuera del panel
+  let presionEnCapa = false;
+  capa.addEventListener("pointerdown", (e) => { presionEnCapa = e.target === capa; });
+  capa.addEventListener("click", (e) => {
+    if (e.target === capa && presionEnCapa) cerrar();
+    presionEnCapa = false;
+  });
+
+  // Tecla Esc
+  document.addEventListener("keydown", (e) => {
+    if (modalAbierto && (e.key === "Escape" || e.key === "Esc")) { e.preventDefault(); cerrar(); }
+  });
+
+  // Foco atrapado dentro del panel
+  function enfocables() {
+    return Array.from(dialogo.querySelectorAll("button, video[controls], [href], [tabindex]:not([tabindex='-1'])"))
+      .filter((el) => !el.hidden && el.offsetParent !== null);
+  }
+  dialogo.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    const lista = enfocables();
+    if (!lista.length) return;
+    const primero = lista[0], ultimo = lista[lista.length - 1];
+    if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+  });
+  document.addEventListener("focusin", (e) => {
+    if (modalAbierto && !dialogo.contains(e.target)) btnCerrar.focus();
+  });
+
+  /* ---------- Inicio ---------- */
+  document.body.classList.toggle("modo-plano", plano);
+  medir();
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(medir);
+    ro.observe(anillo);
+    if (diapositivas[0]) ro.observe(diapositivas[0]);
+  } else {
+    window.addEventListener("resize", medir);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(medir);
+  pintar();
+  requestAnimationFrame((t) => { tPrevio = t; bucle(t); });
+})();
+</script>
+</body>
+</html>
