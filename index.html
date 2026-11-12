@@ -1056,15 +1056,18 @@ const especies = [
 
   // Crear los videos (no se descarga nada hasta que se reproduce uno)
   especies.forEach((esp) => {
-    const v = document.createElement("video");
-    v.setAttribute("preload", "none");
-    v.preload = "none";
-    v.controls = true;
-    v.setAttribute("playsinline", "");
-    v.playsInline = true;
-    v.hidden = true;
-    v.setAttribute("aria-label", "Video de " + esp.nombreComun);
-    v.addEventListener("error", () => falloVideo(esp.id));
+     const v = document.createElement("video");
+     v.setAttribute("preload", "none");
+     v.preload = "none";
+     v.controls = true;
+     v.muted = true;
+     v.defaultMuted = true;
+     v.setAttribute("muted", "");
+     v.setAttribute("playsinline", "");
+     v.playsInline = true;
+     v.hidden = true;
+     v.setAttribute("aria-label", "Video de " + esp.nombreComun);
+     v.addEventListener("error", () => falloVideo(esp.id));
     if (esp.video) v.src = esp.video;
     zonaVideo.insertBefore(v, videoPendiente);
     videos[esp.id] = v;
