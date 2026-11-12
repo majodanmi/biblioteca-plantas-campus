@@ -1088,7 +1088,9 @@ const especies = [
     v.hidden = false;
     const primera = (esp.fotos || []).find((r) => r && !fotosFallidas.has(r));
     if (!v.getAttribute("poster") && primera) v.poster = primera;
-    v.muted = false;                                  // con sonido: la persona hizo clic
+     v.muted = true;                                  // con sonido: la persona hizo clic
+     v.defaultMuted = true;
+     v.setAttribute("muted", "");
     const promesa = v.play();
     if (promesa && promesa.catch) {
       promesa.catch((err) => {
