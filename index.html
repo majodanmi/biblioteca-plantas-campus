@@ -644,9 +644,10 @@ html.con-modal, html.con-modal body { overflow: hidden; }
    ---------------------------------------------------------------------
    Cómo editar sin saber programar:
    • Cambia solo los textos que están entre comillas " ".
-   • id: nombre corto, en minúsculas, sin tildes ni espacios. Debe
-     coincidir con los nombres de los archivos:
-       videos/ID.mp4   y   fotos/ID_1.jpg, fotos/ID_2.jpg, fotos/ID_3.jpg
+   • id: nombre corto, en minúsculas, sin tildes ni espacios (uso interno).
+   • video y fotos: escribe la ruta EXACTA del archivo en el repositorio,
+     respetando mayúsculas, minúsculas y extensión.
+     Ejemplo: "FOTOS/Pino_1.jpeg" no es lo mismo que "fotos/pino_1.jpg".
    • origen: escribe exactamente "Nativa" o "Introducida".
    • Para agregar una especie: copia un bloque completo { ... },
      pégalo antes del corchete ] final y sepáralo del anterior con una coma.
@@ -662,8 +663,8 @@ const especies = [
     nombreComun: "Palma Fúnebre",
     nombreCientifico: "Cycas revoluta",            // POR VALIDAR
     origen: "Introducida",
-    video: "videos/palma.mp4",
-    fotos: ["fotos/palma_1.jpg", "fotos/palma_2.jpg", "fotos/palma_3.jpg"],
+    video: "VIDEOS/Palma.mp4",
+    fotos: ["FOTOS/Palmafunebre_1.HEIC", "FOTOS/Palmafunebre_2.HEIC", "FOTOS/Palmafunebre_3.HEIC"],
     // POR VALIDAR
     datoCurioso: "Hay plantas macho y plantas hembra. Los machos forman un cono alargado y las hembras una especie de cojín dorado donde aparecen semillas de color naranja."
   },
@@ -672,8 +673,8 @@ const especies = [
     nombreComun: "Liquidámbar",
     nombreCientifico: "Liquidambar styraciflua",   // POR VALIDAR
     origen: "Introducida",
-    video: "videos/liquidambar.mp4",
-    fotos: ["fotos/liquidambar_1.jpg", "fotos/liquidambar_2.jpg", "fotos/liquidambar_3.jpg"],
+    video: "VIDEOS/liquidambar.mp4",
+    fotos: ["FOTOS/Liquidambar_1.HEIC", "FOTOS/Liquidambar_2.HEIC", "FOTOS/Liquidambar_3.HEIC"],
     // POR VALIDAR
     datoCurioso: "Los aztecas mezclaban su resina aromática con tabaco para perfumar el humo."
   },
@@ -682,8 +683,8 @@ const especies = [
     nombreComun: "Pino Ciprés",
     nombreCientifico: "Cupressus lusitanica",      // POR VALIDAR
     origen: "Introducida",
-    video: "videos/pino.mp4",
-    fotos: ["fotos/pino_1.jpg", "fotos/pino_2.jpg", "fotos/pino_3.jpg"],
+    video: "VIDEOS/Pino.mp4",
+    fotos: ["FOTOS/Pino_1.jpeg", "FOTOS/Pino_2.jpeg", "FOTOS/Pino_3.jpeg"],
     // POR VALIDAR
     datoCurioso: "Su nombre “lusitanica” significa “de Portugal”, porque los botánicos la describieron a partir de árboles sembrados allá, aunque en realidad es nativa de México y Centroamérica."
   },
@@ -692,8 +693,8 @@ const especies = [
     nombreComun: "Hayuelo",
     nombreCientifico: "Dodonaea viscosa",          // POR VALIDAR
     origen: "Nativa",
-    video: "videos/hayuelo.mp4",
-    fotos: ["fotos/hayuelo_1.jpg", "fotos/hayuelo_2.jpg", "fotos/hayuelo_3.jpg"],
+    video: "VIDEOS/Hayuelo.mp4",
+    fotos: ["FOTOS/Hayuelo_1.HEIC", "FOTOS/Hayuelo_2.HEIC", "FOTOS/Hayuelo_3.HEIC"],
     // POR VALIDAR
     datoCurioso: "Es una de las plantas más viajeras del mundo: crece de forma natural en América, África, Asia y Oceanía."
   },
@@ -702,8 +703,8 @@ const especies = [
     nombreComun: "Papayuelo",
     nombreCientifico: "Vasconcellea pubescens",    // POR VALIDAR
     origen: "Nativa",
-    video: "videos/papayuelo.mp4",
-    fotos: ["fotos/papayuelo_1.jpg", "fotos/papayuelo_2.jpg", "fotos/papayuelo_3.jpg"],
+    video: "VIDEOS/Papayuelo.mp4",
+    fotos: ["FOTOS/papayuelo_1.HEIC", "FOTOS/papayuelo_2.HEIC", "FOTOS/papayuelo_3.HEIC"],
     // POR VALIDAR
     datoCurioso: "En Chile lo llaman “papaya chilena” y sus frutos en conserva son típicos de la ciudad de La Serena."
   },
@@ -714,8 +715,8 @@ const especies = [
     origen: "Nativa",
     // El video y las fotos del Ocobo todavía no existen: mientras tanto
     // se verá "Video en camino" y "Fotos en camino". Solo súbelos con estos nombres.
-    video: "videos/ocobo.mp4",
-    fotos: ["fotos/ocobo_1.jpg", "fotos/ocobo_2.jpg", "fotos/ocobo_3.jpg"],
+    video: "VIDEOS/Ocobo.mp4",
+    fotos: ["FOTOS/Ocobo_1.jpg", "FOTOS/Ocobo_2.jpg", "FOTOS/Ocobo_3.jpg"],
     // POR VALIDAR
     datoCurioso: "En El Salvador se llama maquilishuat y es el árbol nacional del país."
   }
